@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alışkanlık Takip Sistemi</title>
+<link rel="stylesheet" href="css/stil.css">
+</head>
+<body>
+
+<div id="app">
+  <!-- Sidebar aç/kapat butonu (mobilde görünür) -->
+  <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Menüyü aç/kapat">&#9776;</button>
+
+  <!-- Sidebar arkası karartma (mobilde) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- Sol taraftaki menü (sidebar, burası ii oldu) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="profile-section" onclick="showSection('settings'); closeSidebar();">
+        <img id="sidebarAvatar" src="" alt="Profil" class="sidebar-avatar">
+        <span class="sidebar-title">Alışkanlıklarım</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" data-section="dashboard" onclick="showSection('dashboard'); closeSidebar();">
+        <span class="nav-icon">&#9632;</span> Dashboard
+      </button>
+      <button class="nav-btn" data-section="goals" onclick="showSection('goals'); closeSidebar();">
+        <span class="nav-icon">&#9998;</span> Hedefler
+      </button>
+      <button class="nav-btn" data-section="archive" onclick="showSection('archive'); closeSidebar();">
+        <span class="nav-icon">&#128451;</span> Arşiv
+      </button>
+      <button class="nav-btn" data-section="settings" onclick="showSection('settings'); closeSidebar();">
+        <span class="nav-icon">&#9881;</span> Ayarlar
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Anaiçerik alanı (burda herşey var) -->
+  <main class="main-content" id="mainContent">
+    <!-- Dashboard bölümü: grafik, takvim, işaretleme (en onemli kısım) -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-header">
+        <h1>Dashboard</h1>
+        <div class="dashboard-controls">
+          <select id="monthSelect" onchange="renderDashboard()"></select>
+          <select id="yearSelect" onchange="renderDashboard()"></select>
+          <button class="btn btn-danger" onclick="clearAllMarks()" title="Tüm işaretleri kaldır">&#10005; Tüm İşaretleri Kaldır</button>
+          <button class="btn btn-archive" onclick="archiveMonth()" title="Bu ayı arşivle">&#128451; Bu Ayı Arşivle</button>
+          <button class="btn btn-primary" onclick="downloadPDF()">PDF &#128196; İndir</button>
+        </div>
+      </div>
+      <div id="dashboardContent">
+        <canvas id="dailyChart" width="900" height="200"></canvas>
+        <div id="calendarContainer"></div>
+      </div>
+    </section>
+
+    <!-- Hedefler bölümü: ekle, düzenle, sil (tam CRUD) -->
+    <section id="section-goals" class="section">
+      <div class="section-header">
+        <h1>Hedef Tanımlama</h1>
+      </div>
+      <div class="goals-layout">
+        <div class="card">
+          <h2>Yeni Hedef Ekle</h2>
+          <form id="goalForm" onsubmit="saveGoal(event)">
+            <div class="form-group">
+              <label>Kategori</label>
+              <select id="goalCategory" required>
+                <option value="">Seçiniz...</option>
+                <option value="Spor">Spor</option>
+                <option value="Sağlık">Sağlık</option>
+                <option value="Okuma">Okuma</option>
+                <option value="Öğrenme">Öğrenme</option>
+                <option value="Kişisel">Kişisel Gelişim</option>
+                <option value="İş">İş</option>
+                <option value="Hobi">Hobi</option>
+                <option value="Diğer">Diğer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Hedef İsmi</label>
+              <input type="text" id="goalName" required placeholder="Örn: Sabah koşusu">
+            </div>
+            <div class="form-group">
+              <label>Açıklama</label>
+              <textarea id="goalDesc" rows="2" placeholder="Örn: Her sabah 30 dakika koşu"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Haftanın Günleri</label>
+              <div class="day-checkboxes" id="dayCheckboxes">
+                <label class="day-label"><input type="checkbox" value="1"> Pazartesi</label>
+                <label class="day-label"><input type="checkbox" value="2"> Salı</label>
+                <label class="day-label"><input type="checkbox" value="3"> Çarşamba</label>
+                <label class="day-label"><input type="checkbox" value="4"> Perşembe</label>
+                <label class="day-label"><input type="checkbox" value="5"> Cuma</label>
+                <label class="day-label"><input type="checkbox" value="6"> Cumartesi</label>
+                <label class="day-label"><input type="checkbox" value="0"> Pazar</label>
+              </div>
+              <div id="frequencyWarning" class="warning hidden">Hedef sıklığı belirtilmedi</div>
+            </div>
+            <input type="hidden" id="editGoalId" value="">
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="goalSubmitBtn">Hedef Ekle</button>
+              <button type="button" class="btn btn-outline hidden" id="cancelEditBtn" onclick="cancelEdit()">İptal</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Mevcut Hedefler (<span id="goalCount">0</span>/25)</h2>
+          <div id="goalList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Arşiv bölümü: geçmiş aylar ve PDF (geçmişe bakmak lazım) -->
+    <section id="section-archive" class="section">
+      <div class="section-header">
+        <h1>Arşiv</h1>
+      </div>
+      <div id="archiveContent">
+        <div id="archiveList" class="card"></div>
+        <div id="archiveViewer" class="card hidden"></div>
+        <div class="card">
+          <h2>Zaman Aralığı PDF İndir</h2>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">Seçili zaman aralığındaki tüm ayları kapsayan rapor oluşturun.</p>
+          <div class="range-pdf-controls">
+            <div class="range-group">
+              <label>Başlangıç</label>
+              <div class="range-selects">
+                <select id="rangeStartMonth"></select>
+                <select id="rangeStartYear"></select>
+              </div>
+            </div>
+            <div class="range-group">
+              <label>Bitiş</label>
+              <div class="range-selects">
+                <select id="rangeEndMonth"></select>
+                <select id="rangeEndYear"></select>
+              </div>
+            </div>
+            <button class="btn btn-primary range-btn" onclick="downloadRangePDF()">PDF &#128196; İndir</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ayarlar bölümü: profil resmi (değiştire biliyorsun) -->
+    <section id="section-settings" class="section">
+      <div class="section-header">
+        <h1>Ayarlar</h1>
+      </div>
+      <div class="settings-layout">
+        <div class="card">
+          <h2>Profil Resmi</h2>
+          <div class="profile-pic-section">
+            <img id="settingsAvatar" src="" alt="Profil Resmi" class="profile-pic-preview">
+            <div class="profile-inputs">
+              <div class="form-group">
+                <label>Resim URL'si</label>
+                <input type="url" id="avatarUrl" placeholder="https://..." oninput="previewAvatar()">
+              </div>
+              <div class="form-group">
+                <label>veya Bilgisayardan Yükle</label>
+                <input type="file" id="avatarFile" accept="image/*" onchange="uploadAvatar(event)">
+              </div>
+              <button class="btn btn-primary" onclick="saveAvatar()">Kaydet</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Scriptler sırayla yüklenmeli: önce storage, sonra öbürleri, en son app (sıra önemli) -->
+<script src="js/depo.js"></script>
+<script src="js/yardimcilar.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/hedefler.js"></script>
+<script src="js/arsiv.js"></script>
+<script src="js/ayarlar.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/aktar.js"></script>
+<script src="js/uygulama.js"></script>
+</body>
+</html>
