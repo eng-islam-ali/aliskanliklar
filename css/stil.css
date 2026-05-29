@@ -1,0 +1,883 @@
+/* Bütün HTML elemanlarının varsayılan boşluklarını sıfırla (bunu hep yapıyorum) */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Burada renkleri bir kere tanımlıyorum, her yerde aynı renkleri kulanmak için */
+:root {
+  --primary: #4A6CF7;      /* anamavi renk */
+  --primary-dark: #3B5DE7; /* mavinin koyusu (gölge felan) */
+  --success: #27AE60;      /* yeşil - başarılı (basari) */
+  --warning: #F39C12;      /* turuncu - uyarı (dikkat) */
+  --danger: #E74C3C;       /* kırmızı - tehlike (kandırma) */
+  --gray: #95A5A6;         /* gri */
+  --gray-light: #ECF0F1;   /* açık gri */
+  --gray-dark: #7F8C8D;    /* koyu gri */
+  --bg: #F0F2F5;           /* sayfa arka planı */
+  --card-bg: #FFFFFF;      /* kartların arkaplanı */
+  --sidebar-bg: #1E293B;   /* yan menü arkaplanı */
+  --sidebar-text: #CBD5E1; /* yan menü yazı rengi */
+  --sidebar-active: var(--primary); /* seçili menü rengi */
+  --text: #1E293B;         /* ana yazı rengi */
+  --text-secondary: #64748B; /* ikincil yazı rengi */
+  --border: #E2E8F0;       /* kenarlık rengi */
+  --green-light: #D4EDDA;  /* açık yeşil (planlı günler) */
+  --green-dark: #155724;   /* koyu yeşil */
+  --orange-light: #FFF3CD; /* açık turuncu */
+  --orange-dark: #856404;  /* koyu turuncu */
+  --gray-bg: #E9ECEF;      /* gri arkaplan */
+  --radius: 12px;          /* köşe yuvarlatma */
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);  /* hafif gölge */
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.1); /* belirgin gölge */
+  --sidebar-width: 220px;  /* yan menü genişliği */
+}
+
+/* Sayfanın tamamı kaplasın diye yükseklik %100 (tam olarak bilmiyorum ama çalışıyo) */
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* App kabı: yan menü ve içerik yan yana dursun (flex kurtarıyor) */
+#app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== YAN MENÜ (SİDEBAR) ===== */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+  transition: margin-left 0.3s ease;
+  z-index: 100;
+}
+
+/* Sidebar kapalıyken solda gizlenmiş */
+.sidebar.closed {
+  margin-left: calc(var(--sidebar-width) * -1);
+}
+
+.sidebar-header {
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Profil kısmına tıklayınca ayarlar açılsın (belki bunu daha ıyı yapabilirdim) */
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.profile-section:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Sidebar'daki profil resmi */
+.sidebar-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--gray-dark);
+  display: none;
+}
+.sidebar-avatar[src]:not([src=""]) {
+  display: block;
+}
+
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #F1F5F9;
+}
+
+/* Menü butonlarının olduğu alan */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 10px;
+  gap: 4px;
+}
+
+/* Her bir menü butonu */
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  text-align: left;
+  transition: all 0.2s;
+}
+.nav-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: #F1F5F9;
+}
+/* Seçili buton mavi olsun */
+.nav-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+.nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+/* ===== SİDEBAR AÇ/KAPAT BUTONU ===== */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  transition: left 0.3s ease;
+}
+
+/* Sidebar açıkken buton sidebarın yanında dursun */
+.sidebar-toggle.shifted {
+  left: calc(var(--sidebar-width) + 12px);
+}
+
+/* Mobilde sidebarın arkasındaki karartma */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.sidebar-overlay.show {
+  opacity: 1;
+}
+
+/* ===== ANA İÇERİK ===== */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+  min-width: 0;
+  transition: margin-left 0.3s ease;
+}
+
+/* Sidebar açık/kapalıyken içerik kaymasın diye */
+.main-content.shifted {
+  margin-left: 0;
+}
+
+/* Bölümler başta gizli, sadece active olan görünür (display none/block) */
+.section {
+  display: none;
+  animation: fadeIn 0.25s ease;
+}
+.section.active {
+  display: block;
+}
+
+/* Bölüm değişince yavaşça görünme efekti */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.section-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ===== FORM ALANLARI ===== */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+/* Input, textarea ve select kutuları aynı stil (kopyala yapıştır) */
+.form-group input[type="text"],
+.form-group input[type="url"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--card-bg);
+  transition: border-color 0.2s;
+}
+/* Tıklayınca mavi çerçeve çıksın */
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(74,108,247,0.1);
+}
+
+/* Haftanın günleri checkboxları yan yana dizilsin */
+.day-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* Her bir gün etiketi */
+.day-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  user-select: none;
+}
+.day-label:hover {
+  border-color: var(--primary);
+}
+.day-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+/* Uyarı mesajı (gün seçilmeyince çıkar) */
+.warning {
+  background: #FFF3CD;
+  color: #856404;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 8px;
+  border: 1px solid #FFEABC;
+}
+.warning.hidden {
+  display: none;
+}
+
+.hidden { display: none !important; }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ===== BUTONLAR ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); box-shadow: var(--shadow); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #C0392B; }
+.btn-archive { background: var(--gray); color: #fff; }
+.btn-archive:hover { background: var(--gray-dark); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+/* Dashboard üst kısımdaki seçim kutuları */
+.dashboard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.dashboard-controls select {
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--card-bg);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* ===== KART (CARD) ===== */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.card h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+/* ===== GRAFİK (CANVAS) ===== */
+#dailyChart {
+  width: 100%;
+  height: 200px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+  display: block;
+}
+
+/* ===== TAKVİM TABLOSU ===== */
+.calendar-wrapper {
+  overflow-x: auto;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Tablo tüm genişliği kaplasın */
+#calendarTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 600px;
+}
+
+/* Tablo hücrelerinin kenarlıkları */
+#calendarTable th,
+#calendarTable td {
+  border: 1px solid var(--border);
+  padding: 4px 2px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Tablo başlık satırı sabit kalsın (aşağı kaydırınca kaybolmasın) */
+#calendarTable thead th {
+  background: var(--bg);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  padding: 8px 2px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+#calendarTable thead th.day-header {
+  min-width: 28px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Sol taraftaki hedef adı (kaydırınca sabit kalsın, sticky işte) */
+#calendarTable .habit-header {
+  text-align: left;
+  padding: 8px 10px;
+  min-width: 150px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--card-bg);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+#calendarTable .habit-header .habit-category {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+}
+#calendarTable .habit-header .habit-desc {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Takvimdeki işaretleme kutuları */
+.cal-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  display: block;
+  margin: 0 auto;
+}
+
+.cal-cell {
+  padding: 6px 2px;
+  transition: background 0.15s;
+}
+/* Planlı olan günler yeşil arkaplan */
+.cal-cell.planned {
+  background: var(--green-light);
+}
+.cal-cell.checkable {
+  cursor: pointer;
+}
+.cal-cell.checkable:hover {
+  background: #E8F4FD;
+}
+.cal-cell.empty {
+  background: var(--bg);
+}
+
+/* ===== İLERLEME ÇUBUĞU ===== */
+.progress-cell {
+  min-width: 130px;
+  padding: 8px 10px;
+}
+
+/* Çubuğun dış kabı (container) */
+.progress-bar-container {
+  width: 100%;
+  height: 20px;
+  background: var(--gray-bg);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Çubuğun dolu kısmı */
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.4s ease, background 0.4s ease;
+  min-width: 0;
+}
+
+/* Yüzdeye göre renk: düşük=gri, orta=turuncu, yüksek=yeşil */
+.progress-bar-fill.low { background: var(--gray); }
+.progress-bar-fill.mid { background: var(--warning); }
+.progress-bar-fill.high { background: var(--success); }
+
+/* Çubuğun üstündeki yazı (yüzde) */
+.progress-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ===== HEDEFLER BÖLÜMÜ ===== */
+/* Ekran büyükken 2 sütün, küçülünce 1 sütün (responsiv) */
+.goals-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .goals-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Her bir hedef satırı */
+.goal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: box-shadow 0.2s;
+}
+.goal-item:hover {
+  box-shadow: var(--shadow);
+}
+
+.goal-item .goal-info {
+  flex: 1;
+  min-width: 0;
+}
+.goal-item .goal-info strong {
+  font-size: 14px;
+  display: block;
+}
+.goal-item .goal-info .goal-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+.goal-item .goal-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ===== AYARLAR ===== */
+.settings-layout {
+  max-width: 600px;
+}
+
+/* Profil resmi ve yükleme alanı yan yana */
+.profile-pic-section {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.profile-pic-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border);
+  background: var(--gray-bg);
+  flex-shrink: 0;
+}
+.profile-inputs {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ===== ARŞİV ===== */
+.archive-month-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.archive-month-item:hover {
+  background: var(--bg);
+}
+.archive-month-item .archive-month-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.archive-month-item .archive-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ===== ARŞİV GÖRÜNTÜLEYİCİ ===== */
+#archiveViewer .archive-back {
+  margin-bottom: 16px;
+}
+#archiveViewer table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+#archiveViewer th, #archiveViewer td {
+  border: 1px solid var(--border);
+  padding: 6px 4px;
+  text-align: center;
+}
+#archiveViewer th {
+  background: var(--bg);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+#archiveViewer .archived-planned {
+  background: var(--green-light);
+}
+#archiveViewer .archived-done {
+  background: #C8E6C9;
+}
+#archiveViewer .archived-missed {
+  background: #FFEBEE;
+}
+
+/* ===== BOŞ DURUM (HENÜZ VERİ YOK) ===== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+.empty-state p {
+  font-size: 15px;
+  margin-top: 8px;
+}
+
+/* ===== ZAMAN ARALIĞI PDF ===== */
+.range-pdf-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+.range-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 5px;
+}
+.range-selects {
+  display: flex;
+  gap: 6px;
+}
+.range-selects select {
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--card-bg);
+  cursor: pointer;
+  font-weight: 500;
+}
+.range-btn {
+  height: 38px;
+}
+
+/* ===== KAYDIRMA ÇUBUĞU ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray);
+}
+
+/* ===== RESPONSIVE (TABLET VE TELEFON) ===== */
+
+/* Tablette sidebar ı gizle, buton göster */
+@media (max-width: 1024px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    margin-left: calc(var(--sidebar-width) * -1);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.open {
+    margin-left: 0;
+  }
+
+  .sidebar-overlay.show {
+    display: block;
+  }
+
+  .main-content {
+    padding: 28px 20px;
+    margin-left: 0;
+  }
+
+  /* Section başlığının yanına boşluk koy ki toggle butonuyla çakışmasın */
+  .section-header h1 {
+    padding-left: 44px;
+  }
+}
+
+/* Telefonda daha küçük boşluklar */
+@media (max-width: 600px) {
+  .main-content {
+    padding: 16px 12px;
+  }
+
+  .section-header h1 {
+    font-size: 20px;
+    padding-left: 44px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dashboard-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-controls select {
+    width: 100%;
+  }
+
+  .dashboard-controls .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .goals-layout {
+    gap: 12px;
+  }
+
+  .goal-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .goal-item .goal-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .archive-month-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .archive-month-item .archive-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .range-pdf-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .range-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-pic-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #dailyChart {
+    height: 140px;
+  }
+
+  .settings-layout {
+    max-width: 100%;
+  }
+
+  /* Takvim tablosu mobilde yatay kaydırmalı olsun */
+  .calendar-wrapper {
+    margin: 0 -12px;
+    border-radius: 0;
+  }
+
+  #calendarTable {
+    font-size: 12px;
+    min-width: 500px;
+  }
+
+  #calendarTable .habit-header {
+    min-width: 120px;
+  }
+}
+
+/* Çok küçük ekranlar */
+@media (max-width: 400px) {
+  .section-header h1 {
+    font-size: 17px;
+    padding-left: 40px;
+  }
+
+  .sidebar-toggle {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .card h2 {
+    font-size: 15px;
+  }
+
+  .btn {
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+}
